@@ -304,7 +304,7 @@ export default function ProformaDirectaScreen() {
    ESTILOS
 ====================== */
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: "#f4f6f9" },
+  container: { padding: 20, paddingTop: 50, backgroundColor: "#f4f6f9" },
   title: { fontSize: 22, fontWeight: "900", color: "#111d4d", marginTop: 20 },
   subtitle: { color: "#666", marginBottom: 20 },
   section: { marginTop: 25, fontWeight: "700", color: "#111d4d" },

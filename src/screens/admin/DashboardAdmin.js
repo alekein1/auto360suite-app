@@ -96,9 +96,21 @@ export default function DashboardAdmin({ navigation }) {
 
           {open.ordenes && (
             <View style={styles.subMenu}>
-              <Text style={styles.subItem}>📄 Asignadas</Text>
-              <Text style={styles.subItem}>📄 En Proceso</Text>
-              <Text style={styles.subItem}>📄 Finalizadas</Text>
+              <TouchableOpacity
+  onPress={() => navigation.navigate("OrdenesAsignadas")}
+>
+  <Text style={styles.subItem}>📄 Asignadas</Text>
+</TouchableOpacity>
+              <TouchableOpacity
+  onPress={() => navigation.navigate("OrdenesProceso")}
+>
+  <Text style={styles.subItem}>📄 En Proceso</Text>
+</TouchableOpacity>
+              <TouchableOpacity
+  onPress={() => navigation.navigate("OrdenesFinalizadas")}
+>
+  <Text style={styles.subItem}>📄 Finalizadas</Text>
+</TouchableOpacity>
             </View>
           )}
         </View>
@@ -115,7 +127,12 @@ export default function DashboardAdmin({ navigation }) {
 
           {open.tecnicos && (
             <View style={styles.subMenu}>
-              <Text style={styles.subItem}>➕ Gestionar Técnico</Text>
+
+              <TouchableOpacity
+  onPress={() => navigation.navigate("GestionTecnicos")}
+>
+  <Text style={styles.subItem}>➕ Gestionar Técnico</Text>
+</TouchableOpacity>
               <Text style={styles.subItem}>⚙ Asignación</Text>
             </View>
           )}
