@@ -75,7 +75,11 @@ export default function DashboardAdmin({ navigation }) {
 >
   <Text style={styles.subItem}>● Crear Clientes Frecuentes</Text>
 </TouchableOpacity>
-              <Text style={styles.subItem}>📄 Proforma Directa</Text>
+              <TouchableOpacity
+  onPress={() => navigation.navigate("ProformaDirecta")}
+>
+  <Text style={styles.subItem}>Crear Proforma Directa</Text>
+</TouchableOpacity>
             </View>
           )}
         </View>

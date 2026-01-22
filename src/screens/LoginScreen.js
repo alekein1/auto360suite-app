@@ -1,4 +1,5 @@
 import { useState } from "react";
+import * as SecureStore from "expo-secure-store";
 import { 
   View, Text, TextInput, TouchableOpacity, 
   StyleSheet, Image, ActivityIndicator 
@@ -36,9 +37,17 @@ export default function LoginScreen({ navigation }) {
 
       console.log("LOGIN OK:", data);
 
-      const rol = data.usuario.tipo_usuario;       // ADMIN / TECNICO
-      const tipoTec = data.usuario.tipo_tecnico;   // IDENTIFICACION / DETAILING / AUTOSERVICIOS
+// 🔐 GUARDAR TOKEN DE AUTENTICACIÓN
+await SecureStore.setItemAsync("token", data.token);
 
+// (Opcional pero recomendado: guardar usuario)
+await SecureStore.setItemAsync(
+  "usuario",
+  JSON.stringify(data.usuario)
+);
+
+const rol = data.usuario.tipo_usuario;       // ADMIN / TECNICO
+const tipoTec = data.usuario.tipo_tecnico;   // IDENTIFICACION / DETAILING / AUTOSERVICIOS
       // =========================================
       // 🔥 REDIRECCIÓN SEGÚN ROL
       // =========================================
