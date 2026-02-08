@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f7fa",
-    paddingTop: 55, // 👈 AQUÍ BAJAMOS EL TÍTULO
+    paddingTop: 80, // 👈 AQUÍ BAJAMOS EL TÍTULO
     paddingHorizontal: 16,
   },
 

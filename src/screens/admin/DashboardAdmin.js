@@ -133,7 +133,11 @@ export default function DashboardAdmin({ navigation }) {
 >
   <Text style={styles.subItem}>➕ Gestionar Técnico</Text>
 </TouchableOpacity>
-              <Text style={styles.subItem}>⚙ Asignación</Text>
+<TouchableOpacity
+  onPress={() => navigation.navigate("AsignacionTecnicos")}
+>
+  <Text style={styles.subItem}>⚙ Asignación</Text>
+</TouchableOpacity>
             </View>
           )}
         </View>
@@ -150,7 +154,11 @@ export default function DashboardAdmin({ navigation }) {
 
           {open.facturacion && (
             <View style={styles.subMenu}>
-              <Text style={styles.subItem}>📄 Pendientes</Text>
+<TouchableOpacity
+  onPress={() => navigation.navigate("FacturasPendientes")}
+>
+  <Text style={styles.subItem}>Pendientes</Text>
+</TouchableOpacity>
               <Text style={styles.subItem}>🧾 Factura Manual</Text>
               <Text style={styles.subItem}>📄 Finalizadas</Text>
             </View>
@@ -177,7 +185,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 18,
     padding: 18,
-    marginTop: 15,
+    marginTop: 35,
     marginBottom: 25,
 
     flexDirection: "row",

@@ -5,7 +5,10 @@ import OrdenesAsignadasScreen from "../screens/admin/OrdenesAsignadasScreen";
 import OrdenesEnProcesoScreen from "../screens/admin/OrdenesEnProcesoScreen";
 import OrdenesFinalizadasScreen from "../screens/admin/OrdenesFinalizadasScreen";
 import GestionUsuariosScreen from "../screens/admin/GestionUsuariosScreen";
+import AsignacionTecnicosScreen from "../screens/admin/AsignacionTecnicosScreen";
 import DashboardAdmin from "../screens/admin/DashboardAdmin";
+import FacturasPendientesScreen from "../screens/admin/FacturasPendientesScreen";
+import FinalizarFacturaScreen from "../screens/admin/FinalizarFacturaScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -43,7 +46,19 @@ export default function AdminStack() {
   component={GestionUsuariosScreen}
 />
 
+<Stack.Screen
+  name="AsignacionTecnicos"
+  component={AsignacionTecnicosScreen}
+/>
+<Stack.Screen
+  name="FacturasPendientes"
+  component={FacturasPendientesScreen}
+/>
 
+<Stack.Screen
+  name="FinalizarFactura"
+  component={FinalizarFacturaScreen}
+/>
     </Stack.Navigator>
   );
 }

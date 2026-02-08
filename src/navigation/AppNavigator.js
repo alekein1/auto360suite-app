@@ -5,6 +5,7 @@ import WelcomeScreen from "../screens/WelcomeScreen";
 import LoginScreen from "../screens/LoginScreen";
 import HomeScreen from "../screens/HomeScreen"; 
 import AdminStack from "./AdminStack";
+import IdentificacionStack from "./IdentificacionStack";
 
 const Stack = createNativeStackNavigator();
 
@@ -18,6 +19,10 @@ export default function AppNavigator() {
 
         {/* ADMIN */}
         <Stack.Screen name="Admin" component={AdminStack} />
+        <Stack.Screen 
+  name="Identificacion" 
+  component={IdentificacionStack} 
+/>
 
         {/* Usuario común */}
         <Stack.Screen name="Home" component={HomeScreen} />

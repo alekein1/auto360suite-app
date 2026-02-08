@@ -61,10 +61,10 @@ if (rol === "ADMIN") {
       // TECNICOS
       if (rol === "TECNICO") {
 
-        if (tipoTec.includes("IDENTIFICACIÓN VEHICULAR")) {
-          navigation.replace("HomeIdentificacion");
-          return;
-        }
+        if (tipoTec.includes("IDENTIFICACIÓN")) {
+    navigation.replace("Identificacion");
+    return;
+  }
 
         if (tipoTec.includes("DETAILING")) {
           navigation.replace("HomeDetailing");
