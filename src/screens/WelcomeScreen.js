@@ -16,12 +16,6 @@ export default function WelcomeScreen({ navigation }) {
           Sistema integral PQ · Investigación · Técnica · Servicios
         </Text>
 
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={() => alert("Agendar Ticket (pronto)")}
-        >
-          <Text style={styles.btnText}>Agendar Ticket</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.btn}

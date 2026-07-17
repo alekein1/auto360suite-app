@@ -19,6 +19,7 @@ export default function FinalizarFacturaScreen({ route, navigation }) {
 
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   // =========================
   // ESTADO PRINCIPAL
@@ -158,40 +159,116 @@ export default function FinalizarFacturaScreen({ route, navigation }) {
 
   const { subtotal, iva, total } = calcularTotales();
 
-  // =========================
-  // FINALIZAR FACTURA
-  // =========================
-  const finalizarFactura = async () => {
-    const payload = {
-      id_establecimiento: idEstablecimiento,
-      ...cliente,
-      observacion,
-      forma_pago: formaPago,
-      subtotal,
-      iva,
-      descuento_total: Number(descuentoTotal),
-      total,
-      estado_sri: "APROBADA",
-      items
-    };
+  const confirmar = (titulo, mensaje) => new Promise((resolve) => {
+    Alert.alert(titulo, mensaje, [
+      { text: "No", style: "cancel", onPress: () => resolve(false) },
+      { text: "Si", onPress: () => resolve(true) },
+    ]);
+  });
 
-    const res = await fetch(`${API}/factura/finalizar/${id_factura}`, {
-      method: "PUT",
+  const procesarFacturaSri = async () => {
+    const res = await fetch(`${API}/factura/sri/procesar/${id_factura}`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        correo_destino: cliente.correo,
+        enviar_correo: Boolean(cliente.correo)
+      })
     });
 
-    const json = await res.json();
-    if (!json.ok) {
-      Alert.alert("Error", "No se pudo finalizar la factura");
-      return;
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json.mensaje || "No se pudo autorizar la factura en el SRI");
     }
 
-    Alert.alert("✔ Factura finalizada");
-    navigation.goBack();
+    return json;
+  };
+
+  const enviarRideWhatsapp = async () => {
+    const res = await fetch(`${API}/factura/sri/ride/${id_factura}/whatsapp`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        telefono: cliente.telefono
+      })
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok || !json.ok) {
+      throw new Error(json.mensaje || "No se pudo enviar el RIDE por WhatsApp");
+    }
+
+    return json;
+  };
+
+  // =========================
+  // FINALIZAR FACTURA
+  // =========================
+  const finalizarFactura = async () => {
+    try {
+      setSaving(true);
+
+      const payload = {
+        id_establecimiento: idEstablecimiento,
+        ...cliente,
+        observacion,
+        forma_pago: formaPago,
+        subtotal,
+        iva,
+        descuento_total: Number(descuentoTotal),
+        total,
+        estado_sri: "APROBADA",
+        items
+      };
+
+      const res = await fetch(`${API}/factura/finalizar/${id_factura}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) {
+        Alert.alert("Error", "No se pudo finalizar la factura");
+        return;
+      }
+
+      Alert.alert("Factura finalizada", "La factura fue guardada correctamente.");
+
+      const enviarSri = await confirmar("SRI", "Desea enviar esta factura al SRI ahora?");
+      if (enviarSri) {
+        await procesarFacturaSri();
+        Alert.alert("SRI", "Factura autorizada por el SRI.");
+
+        const enviarWhatsapp = await confirmar(
+          "WhatsApp",
+          "Desea enviar el RIDE al WhatsApp del cliente?"
+        );
+
+        if (enviarWhatsapp) {
+          await enviarRideWhatsapp();
+          Alert.alert("WhatsApp", "RIDE enviado por WhatsApp correctamente.");
+        }
+      }
+
+      navigation.goBack();
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", error.message || "No se pudo finalizar la factura");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) return <ActivityIndicator style={{ marginTop: 50 }} />;
@@ -300,8 +377,8 @@ export default function FinalizarFacturaScreen({ route, navigation }) {
       <Text>IVA 15%: ${iva.toFixed(2)}</Text>
       <Text>Total Final: ${total.toFixed(2)}</Text>
 
-      <TouchableOpacity style={styles.btn} onPress={finalizarFactura}>
-        <Text style={styles.btnText}>✔ Guardar Cambios y Finalizar Factura</Text>
+      <TouchableOpacity style={[styles.btn, saving && styles.btnDisabled]} onPress={finalizarFactura} disabled={saving}>
+        <Text style={styles.btnText}>{saving ? "Guardando..." : "✔ Guardar Cambios y Finalizar Factura"}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -334,5 +411,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginVertical: 30
   },
+  btnDisabled: { opacity: 0.65 },
   btnText: { color: "#fff", textAlign: "center", fontWeight: "bold" }
 });

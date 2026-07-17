@@ -222,6 +222,7 @@ export default function GestionUsuariosScreen() {
             <Picker.Item label="Seleccione rol..." value="" />
             <Picker.Item label="Administrador" value="administrador" />
             <Picker.Item label="Técnico" value="tecnico" />
+            <Picker.Item label="Legalización de contratos" value="legalizacion_contratos" />
           </Picker>
         </View>
 

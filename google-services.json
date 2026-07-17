@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "871390676391",
+    "project_id": "auto360suite",
+    "storage_bucket": "auto360suite.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:871390676391:android:d2cf19116bac00257f6282",
+        "android_client_info": {
+          "package_name": "ec.auto360.suite"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDrYh7TVsZEhhXgEdEP7_m2nsE3GBTeRQQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

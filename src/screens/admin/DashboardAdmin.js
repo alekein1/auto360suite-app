@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import * as SecureStore from "expo-secure-store";
 import {
   View,
   Text,
@@ -10,6 +11,9 @@ import {
   Platform,
   UIManager,
 } from "react-native";
+import { unregisterDevicePushNotifications } from "../../services/pushNotifications";
+
+const ADMIN_IDENTIFICACION_EMAIL = "pq.ec593@gmail.com";
 
 if (
   Platform.OS === "android" &&
@@ -19,16 +23,58 @@ if (
 }
 
 export default function DashboardAdmin({ navigation }) {
+  const [usuario, setUsuario] = useState(null);
   const [open, setOpen] = useState({
     proformas: false,
     ordenes: false,
+    identificacion: false,
     tecnicos: false,
     facturacion: false,
   });
 
+  const correoUsuario = useMemo(() => {
+    return String(usuario?.correo || usuario?.email || usuario?.usuario || "").toLowerCase();
+  }, [usuario]);
+  const esAdminIdentificacion = correoUsuario === ADMIN_IDENTIFICACION_EMAIL;
+
+  useEffect(() => {
+    SecureStore.getItemAsync("usuario")
+      .then((storedUser) => {
+        if (storedUser) setUsuario(JSON.parse(storedUser));
+      })
+      .catch((error) => {
+        console.log("Usuario admin warning:", error.message);
+      });
+  }, []);
+
   const toggle = (key) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setOpen({ ...open, [key]: !open[key] });
+  };
+
+  const handleLogout = async () => {
+    try {
+      const token = await SecureStore.getItemAsync("token");
+
+      if (token) {
+        await unregisterDevicePushNotifications(token).catch(() => {});
+      }
+    } finally {
+      await SecureStore.deleteItemAsync("expo_push_token");
+      await SecureStore.deleteItemAsync("token");
+      await SecureStore.deleteItemAsync("usuario");
+      navigation.replace("Welcome");
+    }
+  };
+
+  const abrirBandejaIdentificacion = () => {
+    const rootNavigation = navigation.getParent?.();
+
+    if (rootNavigation) {
+      rootNavigation.navigate("Identificacion", {
+        screen: "IdentificacionRevisionPendientes",
+      });
+    }
   };
 
   return (
@@ -52,7 +98,7 @@ export default function DashboardAdmin({ navigation }) {
 
           <TouchableOpacity
             style={styles.logoutBtn}
-            onPress={() => navigation.replace("Welcome")}
+            onPress={handleLogout}
           >
             <Text style={styles.logoutText}>Salir</Text>
           </TouchableOpacity>
@@ -115,6 +161,26 @@ export default function DashboardAdmin({ navigation }) {
           )}
         </View>
 
+        {esAdminIdentificacion && (
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={styles.cardHeader}
+              onPress={() => toggle("identificacion")}
+            >
+              <Text style={styles.cardTitle}>📥 Identificación Vehicular</Text>
+              <Text style={styles.arrow}>{open.identificacion ? "▲" : "▼"}</Text>
+            </TouchableOpacity>
+
+            {open.identificacion && (
+              <View style={styles.subMenu}>
+                <TouchableOpacity onPress={abrirBandejaIdentificacion}>
+                  <Text style={styles.subItem}>Revisiones pendientes</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* TÉCNICOS */}
         <View style={styles.card}>
           <TouchableOpacity
@@ -159,7 +225,11 @@ export default function DashboardAdmin({ navigation }) {
 >
   <Text style={styles.subItem}>Pendientes</Text>
 </TouchableOpacity>
-              <Text style={styles.subItem}>🧾 Factura Manual</Text>
+<TouchableOpacity
+  onPress={() => navigation.navigate("FacturaManual")}
+>
+  <Text style={styles.subItem}>🧾 Factura Manual</Text>
+</TouchableOpacity>
               <Text style={styles.subItem}>📄 Finalizadas</Text>
             </View>
           )}

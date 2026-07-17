@@ -4,6 +4,7 @@ import {
   View, Text, TextInput, TouchableOpacity, 
   StyleSheet, Image, ActivityIndicator 
 } from "react-native";
+import { registerDeviceForPushNotifications } from "../services/pushNotifications";
 
 const API_URL = "https://api360suite.pqautoexpert.ec/api";
 
@@ -46,8 +47,13 @@ await SecureStore.setItemAsync(
   JSON.stringify(data.usuario)
 );
 
+registerDeviceForPushNotifications(data.token).catch((pushError) => {
+  console.log("Push registration warning:", pushError.message);
+});
+
 const rol = data.usuario.tipo_usuario;       // ADMIN / TECNICO
-const tipoTec = data.usuario.tipo_tecnico;   // IDENTIFICACION / DETAILING / AUTOSERVICIOS
+const rolDb = String(data.usuario.rol || "").toLowerCase();
+const tipoTec = String(data.usuario.tipo_tecnico || "");   // IDENTIFICACION / DETAILING / AUTOSERVICIOS
       // =========================================
       // 🔥 REDIRECCIÓN SEGÚN ROL
       // =========================================
@@ -55,6 +61,11 @@ const tipoTec = data.usuario.tipo_tecnico;   // IDENTIFICACION / DETAILING / AUT
      // ADMIN
 if (rol === "ADMIN") {
   navigation.replace("Admin");
+  return;
+}
+
+if (rolDb === "legalizacion_contratos" || tipoTec.toUpperCase().includes("LEGALIZACION") || tipoTec.toUpperCase().includes("LEGALIZACIÓN")) {
+  navigation.replace("Legalizacion");
   return;
 }
 
@@ -72,7 +83,7 @@ if (rol === "ADMIN") {
         }
 
         if (tipoTec.includes("AUTO SERVICIOS")) {
-          navigation.replace("HomeAutoservicios");
+          navigation.replace("AutoServicio");
           return;
         }
 

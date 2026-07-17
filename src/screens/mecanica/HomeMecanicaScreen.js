@@ -15,8 +15,7 @@ import * as SecureStore from "expo-secure-store";
 import { getOrderSubserviceTheme } from "../../utils/orderSubserviceTheme";
 import { unregisterDevicePushNotifications } from "../../services/pushNotifications";
 
-const API_URL = "https://api360suite.pqautoexpert.ec/api";
-const ADMIN_IDENTIFICACION_EMAIL = "pq.ec593@gmail.com";
+const API = "https://api360suite.pqautoexpert.ec/api";
 
 function parseVehicleData(raw) {
   let vehiculo = raw;
@@ -37,6 +36,16 @@ function parseVehicleData(raw) {
     anio: vehiculo.anio || "-",
     pais: vehiculo.pais || vehiculo.pais_origen || "-",
   };
+}
+
+function normalizeModulo(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/-/g, "")
+    .replace(/\s+/g, "")
+    .trim();
 }
 
 function formatClock(dateValue) {
@@ -61,117 +70,124 @@ function MetricCard({ label, value, accent }) {
   );
 }
 
-function MenuCard({ title, subtitle, onPress }) {
+function MenuCard({ title, subtitle, dark, onPress }) {
   return (
-    <TouchableOpacity style={styles.menuCard} onPress={onPress} activeOpacity={0.9}>
-      <Text style={styles.menuTitle}>{title}</Text>
-      <Text style={styles.menuSubtitle}>{subtitle}</Text>
+    <TouchableOpacity
+      style={[styles.menuCard, dark ? styles.menuCardDark : styles.menuCardGold]}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      <Text style={[styles.menuTitle, dark ? styles.menuTitleLight : styles.menuTitleDark]}>
+        {title}
+      </Text>
+      <Text
+        style={[
+          styles.menuSubtitle,
+          dark ? styles.menuSubtitleLight : styles.menuSubtitleDark,
+        ]}
+      >
+        {subtitle}
+      </Text>
     </TouchableOpacity>
   );
 }
 
-export default function HomeIdentificacionScreen({ navigation }) {
-  const [usuario, setUsuario] = useState(null);
-  const [ordenes, setOrdenes] = useState([]);
-  const [totales, setTotales] = useState({
-    asignadas: 0,
-    en_proceso: 0,
-    finalizadas: 0,
-  });
+export default function HomeMecanicaScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [ordenes, setOrdenes] = useState([]);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [stats, setStats] = useState({
+    asignadas: 0,
+    proceso: 0,
+    finalizadas: 0,
+  });
 
-  const welcomeName = useMemo(() => {
-    const nombres = usuario?.nombres || "";
-    const apellidos = usuario?.apellidos || "";
-    return `${nombres} ${apellidos}`.trim();
-  }, [usuario]);
-  const correoUsuario = String(
-    usuario?.correo || usuario?.email || usuario?.usuario || ""
-  ).toLowerCase();
-  const esAdminIdentificacion = correoUsuario === ADMIN_IDENTIFICACION_EMAIL;
+  const authHeaders = useCallback(async () => {
+    const token = await SecureStore.getItemAsync("token");
 
-  const fetchOrdenes = useCallback(
+    if (!token) {
+      navigation.replace("Login");
+      return null;
+    }
+
+    return {
+      Authorization: `Bearer ${token}`,
+    };
+  }, [navigation]);
+
+  const cargarOrdenes = useCallback(
     async ({ silent = false } = {}) => {
       try {
-        const token = await SecureStore.getItemAsync("token");
+        const headers = await authHeaders();
+        if (!headers) return;
 
-        if (!token) {
-          navigation.replace("Login");
-          return;
-        }
-
-        const response = await fetch(`${API_URL}/tecnico/ordenes`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+        const res = await fetch(`${API}/mecanica/listar-ordenes`, {
+          headers,
         });
 
-        const data = await response.json().catch(() => ({}));
+        const json = await res.json().catch(() => ({}));
 
-        if (!response.ok) {
-          if (!silent) {
-            Alert.alert("Error", data?.error || "No se pudieron cargar las ordenes");
+        if (!json?.ok) {
+          setOrdenes([]);
+          setStats({
+            asignadas: 0,
+            proceso: 0,
+            finalizadas: 0,
+          });
+
+          if (!silent && json?.error) {
+            Alert.alert("Error", json.error);
           }
           return;
         }
 
-        setOrdenes(data?.ordenes || []);
-        setTotales({
-          asignadas: Number(data?.totales?.asignadas || 0),
-          en_proceso: Number(data?.totales?.en_proceso || 0),
-          finalizadas: Number(data?.totales?.finalizadas || 0),
+        const lista = json?.ordenes || [];
+
+        setOrdenes(lista);
+        setStats({
+          asignadas: lista.length,
+          proceso: lista.filter((o) => String(o?.estado || "").toUpperCase() === "EN_PROCESO").length,
+          finalizadas: lista.filter((o) => String(o?.estado || "").toUpperCase() === "FINALIZADA").length,
         });
         setLastUpdated(new Date());
-      } catch (error) {
-        console.log(error);
+      } catch (e) {
+        console.log(e);
         if (!silent) {
-          Alert.alert("Error", "Error al conectar con el servidor");
+          Alert.alert("Error", "No se pudieron cargar las ordenes de mecanica");
         }
       }
     },
-    [navigation]
+    [authHeaders]
   );
 
   useEffect(() => {
     let mounted = true;
 
-    async function bootstrap() {
+    async function init() {
       try {
-        const storedUser = await SecureStore.getItemAsync("usuario");
-        if (storedUser && mounted) {
-          setUsuario(JSON.parse(storedUser));
-        }
-
-        if (mounted) {
-          await fetchOrdenes();
-        }
-      } catch (error) {
-        console.log(error);
-        Alert.alert("Error", "No se pudo cargar la informacion inicial");
+        await cargarOrdenes();
       } finally {
         if (mounted) setLoading(false);
       }
     }
 
-    bootstrap();
+    init();
 
     return () => {
       mounted = false;
     };
-  }, [fetchOrdenes]);
+  }, [cargarOrdenes]);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
 
-      fetchOrdenes({ silent: true });
+      cargarOrdenes({ silent: true });
 
       const interval = setInterval(() => {
         if (active) {
-          fetchOrdenes({ silent: true });
+          cargarOrdenes({ silent: true });
         }
       }, 10000);
 
@@ -179,14 +195,14 @@ export default function HomeIdentificacionScreen({ navigation }) {
         active = false;
         clearInterval(interval);
       };
-    }, [fetchOrdenes])
+    }, [cargarOrdenes])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchOrdenes();
+    await cargarOrdenes();
     setRefreshing(false);
-  }, [fetchOrdenes]);
+  }, [cargarOrdenes]);
 
   async function cerrarSesion() {
     try {
@@ -199,13 +215,12 @@ export default function HomeIdentificacionScreen({ navigation }) {
       await SecureStore.deleteItemAsync("token");
       await SecureStore.deleteItemAsync("usuario");
       const rootNavigation = navigation.getParent?.();
-      if (rootNavigation) {
-        rootNavigation.replace("Welcome");
-      } else {
-        navigation.replace("Welcome");
-      }
+      if (rootNavigation) rootNavigation.replace("Welcome");
+      else navigation.replace("Welcome");
     }
   }
+
+  const pendingCount = useMemo(() => ordenes.length, [ordenes]);
 
   async function confirmarInicio(orden) {
     Alert.alert(
@@ -215,71 +230,38 @@ export default function HomeIdentificacionScreen({ navigation }) {
         { text: "Cancelar", style: "cancel" },
         {
           text: "Iniciar",
-          onPress: () => iniciarIdentificacion(orden.id_orden, orden.subservicio_nombre),
+          onPress: () => iniciarOrden(orden),
         },
       ]
     );
   }
 
-  async function iniciarIdentificacion(idOrden, subservicio = "") {
-    const modulo = String(subservicio).trim().toLowerCase();
-
+  async function iniciarOrden(orden) {
     try {
-      if (modulo.includes("verificación") || modulo.includes("verificacion")) {
-        await iniciarProceso(`/identificacion/iniciar/${idOrden}`);
-        navigation.navigate("Identificacion", { id_orden: idOrden });
+      const headers = await authHeaders();
+      if (!headers) return;
+
+      const modulo = normalizeModulo(orden?.subservicio_nombre);
+
+      if (modulo.includes("precompra")) {
+        navigation.navigate("PrecompraOrden", { id_orden: orden.id_orden });
         return;
       }
 
-      if (modulo.includes("historial")) {
-        await iniciarProceso(`/historial/iniciar/${idOrden}`);
-        navigation.navigate("HistorialVehicular", { id_orden: idOrden });
+      const res = await fetch(`${API}/mecanica/iniciar/${orden.id_orden}`, {
+        method: "PUT",
+        headers,
+      });
+
+      if (!res.ok) {
+        Alert.alert("Error", "No se pudo iniciar la orden de mecanica");
         return;
       }
 
-      if (modulo.includes("certificado")) {
-        Alert.alert(
-          "Modulo pendiente",
-          "Certificado Unico Vehicular aun no esta disponible en esta app."
-        );
-        return;
-      }
-
-      if (
-        modulo.includes("constancia") ||
-        modulo.includes("legalizacion") ||
-        modulo.includes("legalización")
-      ) {
-        await iniciarProceso(`/contratos/iniciar/${idOrden}`);
-        navigation.navigate("Contrato", { id_orden: idOrden });
-        return;
-      }
-
-      Alert.alert("Aviso", "No se reconocio el subservicio de esta orden");
-    } catch (error) {
-      console.log(error);
-      Alert.alert("Error", "No se pudo iniciar el proceso");
-    }
-  }
-
-  async function iniciarProceso(url) {
-    const token = await SecureStore.getItemAsync("token");
-
-    if (!token) {
-      navigation.replace("Login");
-      return;
-    }
-
-    const response = await fetch(`${API_URL}${url}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Error iniciando el proceso");
+      navigation.navigate("MecanicaOrden", { id_orden: orden.id_orden });
+    } catch (e) {
+      console.log(e);
+      Alert.alert("Error", "No se pudo iniciar la orden");
     }
   }
 
@@ -287,7 +269,7 @@ export default function HomeIdentificacionScreen({ navigation }) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#111d4d" />
-        <Text style={styles.loadingText}>Cargando panel...</Text>
+        <Text style={styles.loadingText}>Cargando panel de mecanica...</Text>
       </View>
     );
   }
@@ -301,7 +283,7 @@ export default function HomeIdentificacionScreen({ navigation }) {
       >
       <View style={styles.heroCard}>
         <View style={styles.heroHeaderRow}>
-          <Text style={styles.heroEyebrow}>Panel Tecnico</Text>
+          <Text style={styles.heroEyebrow}>Modulo Mecanica</Text>
           <TouchableOpacity
             style={styles.heroLogoutBtn}
             onPress={cerrarSesion}
@@ -310,11 +292,9 @@ export default function HomeIdentificacionScreen({ navigation }) {
             <Text style={styles.heroLogoutText}>Salir</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.heroTitle}>
-          {welcomeName ? `Bienvenido, ${welcomeName}` : "Bienvenido"}
-        </Text>
+        <Text style={styles.heroTitle}>Ordenes Tecnicas Asignadas</Text>
         <Text style={styles.heroSubtitle}>
-          Monitoree sus ordenes y arranque el trabajo apenas ingresen nuevas asignaciones.
+          Controle mecanica y precompra desde un solo panel con actualizacion continua.
         </Text>
 
         <View style={styles.liveRow}>
@@ -328,56 +308,47 @@ export default function HomeIdentificacionScreen({ navigation }) {
 
       <View style={styles.menuGrid}>
         <MenuCard
-          title="📘 Identificaciones"
-          subtitle="Registros y ordenes de verificacion"
-          onPress={() => navigation.navigate("IdentificacionesHistorial")}
-        />
-        {esAdminIdentificacion && (
-          <MenuCard
-            title="📥 Bandeja de revisión"
-            subtitle="Verificaciones de series pendientes"
-            onPress={() => navigation.navigate("IdentificacionRevisionPendientes")}
-          />
-        )}
-        <MenuCard
-          title="📙 Historial Vehicular"
-          subtitle="Consulta registros de historial"
-          onPress={() => navigation.navigate("HistorialRegistros")}
+          title="🧰 Historial Mecanica"
+          subtitle="Ordenes finalizadas y reportes"
+          dark
+          onPress={() => navigation.navigate("MecanicaHistorial")}
         />
         <MenuCard
-          title="📒 Contratos y Constancias"
-          subtitle="Revise documentos emitidos"
-          onPress={() => navigation.navigate("ContratosHistorial")}
+          title="📄 Historial Precompra"
+          subtitle="Revision y documentos de precompra"
+          onPress={() => navigation.navigate("PrecompraHistorial")}
         />
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Resumen de ordenes</Text>
-        <Text style={styles.sectionHint}>Deslice hacia abajo para actualizar manualmente.</Text>
+        <Text style={styles.sectionTitle}>Resumen operativo</Text>
+        <Text style={styles.sectionHint}>
+          Hay {pendingCount} orden{pendingCount === 1 ? "" : "es"} activa{pendingCount === 1 ? "" : "s"} en este tablero.
+        </Text>
       </View>
 
       <View style={styles.metricsRow}>
-        <MetricCard label="Asignadas" value={totales.asignadas} accent="#111d4d" />
-        <MetricCard label="En proceso" value={totales.en_proceso} accent="#debb3c" />
-        <MetricCard label="Finalizadas" value={totales.finalizadas} accent="#16a34a" />
+        <MetricCard label="Asignadas" value={stats.asignadas} accent="#111d4d" />
+        <MetricCard label="En proceso" value={stats.proceso} accent="#debb3c" />
+        <MetricCard label="Finalizadas" value={stats.finalizadas} accent="#16a34a" />
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Ordenes de Trabajo</Text>
-        <Text style={styles.sectionHint}>Vista en tiempo real de sus pendientes tecnicos.</Text>
+        <Text style={styles.sectionTitle}>Ordenes pendientes</Text>
+        <Text style={styles.sectionHint}>Deslice para refrescar o espere la sincronizacion automatica.</Text>
       </View>
 
       {ordenes.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No hay ordenes disponibles</Text>
+          <Text style={styles.emptyTitle}>No tiene ordenes asignadas</Text>
           <Text style={styles.emptyText}>
-            Cuando el sistema le asigne nuevas ordenes apareceran aqui automaticamente.
+            Cuando lleguen nuevas asignaciones de mecanica o precompra apareceran aqui.
           </Text>
         </View>
       ) : (
         ordenes.map((orden) => {
-          const vehiculo = parseVehicleData(orden.datos_vehiculo);
-          const subserviceTheme = getOrderSubserviceTheme(orden.subservicio_nombre);
+          const vehiculo = parseVehicleData(orden?.datos_vehiculo);
+          const subserviceTheme = getOrderSubserviceTheme(orden?.subservicio_nombre);
 
           return (
             <View key={orden.id_orden} style={styles.orderCard}>
@@ -388,6 +359,7 @@ export default function HomeIdentificacionScreen({ navigation }) {
                     {orden.nombre_cliente} {orden.apellido_cliente}
                   </Text>
                 </View>
+
                 <View style={styles.orderIdPill}>
                   <Text style={styles.orderIdText}>#{orden.id_orden}</Text>
                 </View>
@@ -547,7 +519,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   menuCard: {
-    backgroundColor: "#fff",
     borderRadius: 18,
     padding: 16,
     shadowColor: "#000",
@@ -556,16 +527,32 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
   },
+  menuCardDark: {
+    backgroundColor: "#111d4d",
+  },
+  menuCardGold: {
+    backgroundColor: "#debb3c",
+  },
   menuTitle: {
-    color: "#111d4d",
     fontSize: 17,
     fontWeight: "900",
   },
+  menuTitleLight: {
+    color: "#fff",
+  },
+  menuTitleDark: {
+    color: "#111d4d",
+  },
   menuSubtitle: {
     marginTop: 6,
-    color: "#667085",
     fontWeight: "600",
     lineHeight: 19,
+  },
+  menuSubtitleLight: {
+    color: "#d7def4",
+  },
+  menuSubtitleDark: {
+    color: "#4a5568",
   },
   sectionHeader: {
     marginTop: 22,

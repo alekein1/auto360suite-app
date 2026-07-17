@@ -9,6 +9,7 @@ import AsignacionTecnicosScreen from "../screens/admin/AsignacionTecnicosScreen"
 import DashboardAdmin from "../screens/admin/DashboardAdmin";
 import FacturasPendientesScreen from "../screens/admin/FacturasPendientesScreen";
 import FinalizarFacturaScreen from "../screens/admin/FinalizarFacturaScreen";
+import FacturaManualScreen from "../screens/admin/FacturaManualScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -58,6 +59,10 @@ export default function AdminStack() {
 <Stack.Screen
   name="FinalizarFactura"
   component={FinalizarFacturaScreen}
+/>
+<Stack.Screen
+  name="FacturaManual"
+  component={FacturaManualScreen}
 />
     </Stack.Navigator>
   );

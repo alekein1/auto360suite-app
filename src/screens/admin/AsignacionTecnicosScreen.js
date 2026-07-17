@@ -71,7 +71,7 @@ export default function AsignacionTecnicosScreen() {
       });
       const data = await res.json();
       const activos = data.filter(
-        (u) => u.rol === "tecnico" && u.estado == 1
+        (u) => ["tecnico", "legalizacion_contratos"].includes(u.rol) && u.estado == 1
       );
       setTecnicos(activos);
     } catch {
@@ -189,7 +189,7 @@ export default function AsignacionTecnicosScreen() {
             {tecnicos.map((t) => (
               <Picker.Item
                 key={t.id}
-                label={`${t.nombres} ${t.apellidos}`}
+                label={`${t.nombres} ${t.apellidos}${t.rol === "legalizacion_contratos" ? " · Legalización" : ""}`}
                 value={t.id}
               />
             ))}
