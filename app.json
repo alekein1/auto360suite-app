@@ -2,7 +2,7 @@
   "expo": {
     "name": "Auto360 Suite",
     "slug": "auto360mobile",
-    "version": "2.1.0",
+    "version": "2.1.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",

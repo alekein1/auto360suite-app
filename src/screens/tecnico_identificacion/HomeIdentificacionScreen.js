@@ -16,7 +16,6 @@ import { getOrderSubserviceTheme } from "../../utils/orderSubserviceTheme";
 import { unregisterDevicePushNotifications } from "../../services/pushNotifications";
 
 const API_URL = "https://api360suite.pqautoexpert.ec/api";
-const ADMIN_IDENTIFICACION_EMAIL = "pq.ec593@gmail.com";
 
 function parseVehicleData(raw) {
   let vehiculo = raw;
@@ -87,11 +86,6 @@ export default function HomeIdentificacionScreen({ navigation }) {
     const apellidos = usuario?.apellidos || "";
     return `${nombres} ${apellidos}`.trim();
   }, [usuario]);
-  const correoUsuario = String(
-    usuario?.correo || usuario?.email || usuario?.usuario || ""
-  ).toLowerCase();
-  const esAdminIdentificacion = correoUsuario === ADMIN_IDENTIFICACION_EMAIL;
-
   const fetchOrdenes = useCallback(
     async ({ silent = false } = {}) => {
       try {
@@ -226,8 +220,12 @@ export default function HomeIdentificacionScreen({ navigation }) {
 
     try {
       if (modulo.includes("verificación") || modulo.includes("verificacion")) {
-        await iniciarProceso(`/identificacion/iniciar/${idOrden}`);
-        navigation.navigate("Identificacion", { id_orden: idOrden });
+        await iniciarProceso("/identificacion-nueva/iniciar/" + idOrden, {
+          lugar: "RIOBAMBA OFICINA",
+          tipo_revision: "preventiva",
+          condicion: "compra",
+        });
+        navigation.navigate("IdentificacionNueva", { id_orden: idOrden });
         return;
       }
 
@@ -262,7 +260,7 @@ export default function HomeIdentificacionScreen({ navigation }) {
     }
   }
 
-  async function iniciarProceso(url) {
+  async function iniciarProceso(url, body = null) {
     const token = await SecureStore.getItemAsync("token");
 
     if (!token) {
@@ -276,6 +274,7 @@ export default function HomeIdentificacionScreen({ navigation }) {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
+      body: body ? JSON.stringify(body) : undefined,
     });
 
     if (!response.ok) {
@@ -328,17 +327,15 @@ export default function HomeIdentificacionScreen({ navigation }) {
 
       <View style={styles.menuGrid}>
         <MenuCard
-          title="📘 Identificaciones"
-          subtitle="Registros y ordenes de verificacion"
+          title="📘 Identificaciones antiguas"
+          subtitle="Historial anterior y reimpresiones"
           onPress={() => navigation.navigate("IdentificacionesHistorial")}
         />
-        {esAdminIdentificacion && (
-          <MenuCard
-            title="📥 Bandeja de revisión"
-            subtitle="Verificaciones de series pendientes"
-            onPress={() => navigation.navigate("IdentificacionRevisionPendientes")}
-          />
-        )}
+        <MenuCard
+          title="📗 Identificaciones nuevas"
+          subtitle="Historial del nuevo modulo"
+          onPress={() => navigation.navigate("IdentificacionesNuevasHistorial")}
+        />
         <MenuCard
           title="📙 Historial Vehicular"
           subtitle="Consulta registros de historial"

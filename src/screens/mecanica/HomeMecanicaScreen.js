@@ -61,6 +61,10 @@ function formatClock(dateValue) {
   }
 }
 
+function normalizeEstado(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
 function MetricCard({ label, value, accent }) {
   return (
     <View style={[styles.metricCard, { borderTopColor: accent }]}>
@@ -142,13 +146,16 @@ export default function HomeMecanicaScreen({ navigation }) {
           return;
         }
 
-        const lista = json?.ordenes || [];
+        const lista = Array.isArray(json?.ordenes)
+          ? json.ordenes.filter((o) => normalizeEstado(o?.estado_orden || o?.estado) === "asignada")
+          : [];
+        const totales = json?.totales || {};
 
         setOrdenes(lista);
         setStats({
-          asignadas: lista.length,
-          proceso: lista.filter((o) => String(o?.estado || "").toUpperCase() === "EN_PROCESO").length,
-          finalizadas: lista.filter((o) => String(o?.estado || "").toUpperCase() === "FINALIZADA").length,
+          asignadas: Number(totales.asignadas ?? lista.length ?? 0),
+          proceso: Number(totales.en_proceso ?? 0),
+          finalizadas: Number(totales.finalizadas ?? 0),
         });
         setLastUpdated(new Date());
       } catch (e) {
@@ -265,15 +272,6 @@ export default function HomeMecanicaScreen({ navigation }) {
     }
   }
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#111d4d" />
-        <Text style={styles.loadingText}>Cargando panel de mecanica...</Text>
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
       <ScrollView
@@ -314,8 +312,8 @@ export default function HomeMecanicaScreen({ navigation }) {
           onPress={() => navigation.navigate("MecanicaHistorial")}
         />
         <MenuCard
-          title="📄 Historial Precompra"
-          subtitle="Revision y documentos de precompra"
+          title="📄 Gestión Precompra"
+          subtitle="Pendientes, finalizadas, eliminar y PDF"
           onPress={() => navigation.navigate("PrecompraHistorial")}
         />
       </View>
@@ -338,7 +336,15 @@ export default function HomeMecanicaScreen({ navigation }) {
         <Text style={styles.sectionHint}>Deslice para refrescar o espere la sincronizacion automatica.</Text>
       </View>
 
-      {ordenes.length === 0 ? (
+      {loading ? (
+        <View style={styles.emptyCard}>
+          <ActivityIndicator size="small" color="#111d4d" />
+          <Text style={styles.emptyTitle}>Cargando ordenes...</Text>
+          <Text style={styles.emptyText}>
+            El panel ya esta listo; estamos sincronizando las asignaciones.
+          </Text>
+        </View>
+      ) : ordenes.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyTitle}>No tiene ordenes asignadas</Text>
           <Text style={styles.emptyText}>

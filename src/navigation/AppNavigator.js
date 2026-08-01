@@ -1,20 +1,18 @@
 import { useEffect, useRef } from "react";
-import { NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
+import {
+  CommonActions,
+  NavigationContainer,
+  createNavigationContainerRef,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as SecureStore from "expo-secure-store";
 
 import WelcomeScreen from "../screens/WelcomeScreen";
-import LoginScreen from "../screens/LoginScreen";
-import HomeScreen from "../screens/HomeScreen"; 
-import AdminStack from "./AdminStack";
-import IdentificacionStack from "./IdentificacionStack";
-import AutoServicioStack from "./AutoServicioStack";
-import LegalizacionStack from "./LegalizacionStack";
 import {
   extractNotificationNavigationPayload,
   isPushNotificationsRuntimeEnabled,
-  registerDeviceForPushNotifications,
 } from "../services/pushNotifications";
+import { resolveRootRouteForUser } from "../utils/sessionRouting";
 
 const Stack = createNativeStackNavigator();
 const navigationRef = createNavigationContainerRef();
@@ -25,6 +23,51 @@ const Notifications = isPushNotificationsRuntimeEnabled()
 export default function AppNavigator() {
   const pendingNavigationRef = useRef(null);
   const lastNotificationIdRef = useRef(null);
+  const pendingSessionRouteRef = useRef(null);
+
+  const replaceRootRoute = (routeName) => {
+    if (!routeName) {
+      return;
+    }
+
+    if (!navigationRef.isReady()) {
+      pendingSessionRouteRef.current = routeName;
+      return;
+    }
+
+    navigationRef.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: routeName }],
+      })
+    );
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const restoreSession = async () => {
+      const [storedToken, storedUser] = await Promise.all([
+        SecureStore.getItemAsync("token"),
+        SecureStore.getItemAsync("usuario"),
+      ]);
+
+      if (!mounted || !storedToken || !storedUser) {
+        return;
+      }
+
+      const user = JSON.parse(storedUser);
+      replaceRootRoute(resolveRootRouteForUser(user));
+    };
+
+    restoreSession().catch((error) => {
+      console.log("Session restore warning:", error.message);
+    });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -61,8 +104,6 @@ export default function AppNavigator() {
         pendingNavigationRef.current = null;
       }
     };
-
-    registerDeviceForPushNotifications().catch(() => {});
 
     if (!Notifications) {
       return () => {
@@ -103,6 +144,14 @@ export default function AppNavigator() {
     <NavigationContainer
       ref={navigationRef}
       onReady={() => {
+        const sessionRoute = pendingSessionRouteRef.current;
+
+        if (sessionRoute) {
+          pendingSessionRouteRef.current = null;
+          replaceRootRoute(sessionRoute);
+          return;
+        }
+
         const pending = pendingNavigationRef.current;
 
         if (!pending) {
@@ -117,29 +166,39 @@ export default function AppNavigator() {
         pendingNavigationRef.current = null;
       }}
     >
-      <Stack.Navigator initialRouteName="Welcome" screenOptions={{ headerShown: false }}>
-
+      <Stack.Navigator
+        initialRouteName="Welcome"
+        screenOptions={{ headerShown: false }}
+      >
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen
+          name="Login"
+          getComponent={() => require("../screens/LoginScreen").default}
+        />
 
         {/* ADMIN */}
-        <Stack.Screen name="Admin" component={AdminStack} />
-        <Stack.Screen 
-  name="Identificacion" 
-  component={IdentificacionStack} 
-/>
-<Stack.Screen 
-  name="AutoServicio" 
-  component={AutoServicioStack} 
-/>
-<Stack.Screen
-  name="Legalizacion"
-  component={LegalizacionStack}
-/>
+        <Stack.Screen
+          name="Admin"
+          getComponent={() => require("./AdminStack").default}
+        />
+        <Stack.Screen
+          name="Identificacion"
+          getComponent={() => require("./IdentificacionStack").default}
+        />
+        <Stack.Screen
+          name="AutoServicio"
+          getComponent={() => require("./AutoServicioStack").default}
+        />
+        <Stack.Screen
+          name="Legalizacion"
+          getComponent={() => require("./LegalizacionStack").default}
+        />
 
         {/* Usuario común */}
-        <Stack.Screen name="Home" component={HomeScreen} />
-
+        <Stack.Screen
+          name="Home"
+          getComponent={() => require("../screens/HomeScreen").default}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

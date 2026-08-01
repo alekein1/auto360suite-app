@@ -72,7 +72,7 @@ export default function DashboardAdmin({ navigation }) {
 
     if (rootNavigation) {
       rootNavigation.navigate("Identificacion", {
-        screen: "IdentificacionRevisionPendientes",
+        screen: "IdentificacionesNuevasHistorial",
       });
     }
   };
@@ -174,7 +174,7 @@ export default function DashboardAdmin({ navigation }) {
             {open.identificacion && (
               <View style={styles.subMenu}>
                 <TouchableOpacity onPress={abrirBandejaIdentificacion}>
-                  <Text style={styles.subItem}>Revisiones pendientes</Text>
+                  <Text style={styles.subItem}>Identificaciones nuevas</Text>
                 </TouchableOpacity>
               </View>
             )}

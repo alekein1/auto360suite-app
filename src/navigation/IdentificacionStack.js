@@ -2,13 +2,14 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import HomeIdentificacionScreen from "../screens/tecnico_identificacion/HomeIdentificacionScreen";
 import IdentificacionScreen from "../screens/tecnico_identificacion/IdentificacionScreen";
+import IdentificacionNuevaScreen from "../screens/tecnico_identificacion/IdentificacionNuevaScreen";
 import HistorialScreen from "../screens/tecnico_identificacion/HistorialScreen";
 import ContratoConstanciaScreen from "../screens/tecnico_identificacion/ContratoScreen";
 import IdentificacionesHistorialScreen from "../screens/tecnico_identificacion/IdentificacionesHistorialScreen1";
+import IdentificacionesNuevasHistorialScreen from "../screens/tecnico_identificacion/IdentificacionesNuevasHistorialScreen";
 import HistorialVehicularHistorialScreen from "../screens/tecnico_identificacion/HistorialVehicularHistorialScreen";
 import ContratosHistorialScreen from "../screens/tecnico_identificacion/ContratosHistorialScreen";
 import PdfPreviewScreen from "../screens/tecnico_identificacion/PdfPreviewScreen";
-import RevisionPendientesIdentificacionScreen from "../screens/tecnico_identificacion/RevisionPendientesIdentificacionScreen";
 
 const Stack = createNativeStackNavigator();
 const lockedOrderScreenOptions = {
@@ -22,9 +23,27 @@ export default function IdentificacionStack() {
       <Stack.Screen name="HomeIdentificacion" component={HomeIdentificacionScreen} />
 
       <Stack.Screen
+        name="IdentificacionNueva"
+        component={IdentificacionNuevaScreen}
+        options={{ title: "Verificación Nueva", ...lockedOrderScreenOptions }}
+      />
+
+      <Stack.Screen
         name="Identificacion"
         component={IdentificacionScreen}
         options={{ title: "Verificación de Series", ...lockedOrderScreenOptions }}
+      />
+
+      <Stack.Screen
+        name="IdentificacionesNuevasHistorial"
+        component={IdentificacionesNuevasHistorialScreen}
+        options={{ title: "Identificaciones Nuevas" }}
+      />
+
+      <Stack.Screen
+        name="IdentificacionesHistorial"
+        component={IdentificacionesHistorialScreen}
+        options={{ title: "Identificaciones Antiguas" }}
       />
 
       <Stack.Screen
@@ -37,18 +56,6 @@ export default function IdentificacionStack() {
         name="Contrato"
         component={ContratoConstanciaScreen}
         options={{ title: "Contrato / Constancia", ...lockedOrderScreenOptions }}
-      />
-
-      <Stack.Screen
-        name="IdentificacionesHistorial"
-        component={IdentificacionesHistorialScreen}
-        options={{ title: "Identificaciones — Registros" }}
-      />
-
-      <Stack.Screen
-        name="IdentificacionRevisionPendientes"
-        component={RevisionPendientesIdentificacionScreen}
-        options={{ title: "Revisión de Identificación" }}
       />
 
       <Stack.Screen

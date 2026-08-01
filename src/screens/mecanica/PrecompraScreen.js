@@ -17,6 +17,7 @@ import * as SecureStore from "expo-secure-store";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useLockOrderBackNavigation from "../../hooks/useLockOrderBackNavigation";
 import { unregisterDevicePushNotifications } from "../../services/pushNotifications";
@@ -39,6 +40,23 @@ function originFromApi(apiUrl) {
   } catch {
     return apiUrl;
   }
+}
+
+async function optimizarFotoPrecompra(asset, index = 0) {
+  const result = await ImageManipulator.manipulateAsync(
+    asset.uri,
+    [{ resize: { width: 1100 } }],
+    {
+      compress: 0.65,
+      format: ImageManipulator.SaveFormat.JPEG,
+    }
+  );
+
+  return {
+    uri: result.uri,
+    name: `precompra_${Date.now()}_${index}.jpg`,
+    type: "image/jpeg",
+  };
 }
 
 function CardBox({ title, icon, color = "#111d4d", right, children }) {
@@ -438,16 +456,12 @@ if(!permiso) return [];
 
 const result = await ImagePicker.launchCameraAsync({
 mediaTypes: ImagePicker.MediaTypeOptions.Images,
-quality:0.8
+quality:0.55
 });
 
 if(result.canceled) return [];
 
-return result.assets.map(a=>({
-uri:a.uri,
-name:`foto_${Date.now()}.jpg`,
-type:"image/jpeg"
-}));
+return Promise.all(result.assets.map(optimizarFotoPrecompra));
 
 }
 
@@ -462,18 +476,14 @@ if(!permiso) return [];
 
 const result = await ImagePicker.launchImageLibraryAsync({
 mediaTypes: ImagePicker.MediaTypeOptions.Images,
-quality:0.8,
+quality:0.55,
 allowsMultipleSelection:true,
-selectionLimit:8
+selectionLimit:5
 });
 
 if(result.canceled) return [];
 
-return result.assets.map(a=>({
-uri:a.uri,
-name:`foto_${Date.now()}.jpg`,
-type:"image/jpeg"
-}));
+return Promise.all(result.assets.map(optimizarFotoPrecompra));
 
 }
 

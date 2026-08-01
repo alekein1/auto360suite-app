@@ -5,6 +5,7 @@ import {
   StyleSheet, Image, ActivityIndicator 
 } from "react-native";
 import { registerDeviceForPushNotifications } from "../services/pushNotifications";
+import { resolveRootRouteForUser } from "../utils/sessionRouting";
 
 const API_URL = "https://api360suite.pqautoexpert.ec/api";
 
@@ -51,49 +52,7 @@ registerDeviceForPushNotifications(data.token).catch((pushError) => {
   console.log("Push registration warning:", pushError.message);
 });
 
-const rol = data.usuario.tipo_usuario;       // ADMIN / TECNICO
-const rolDb = String(data.usuario.rol || "").toLowerCase();
-const tipoTec = String(data.usuario.tipo_tecnico || "");   // IDENTIFICACION / DETAILING / AUTOSERVICIOS
-      // =========================================
-      // 🔥 REDIRECCIÓN SEGÚN ROL
-      // =========================================
-
-     // ADMIN
-if (rol === "ADMIN") {
-  navigation.replace("Admin");
-  return;
-}
-
-if (rolDb === "legalizacion_contratos" || tipoTec.toUpperCase().includes("LEGALIZACION") || tipoTec.toUpperCase().includes("LEGALIZACIÓN")) {
-  navigation.replace("Legalizacion");
-  return;
-}
-
-      // TECNICOS
-      if (rol === "TECNICO") {
-
-        if (tipoTec.includes("IDENTIFICACIÓN")) {
-    navigation.replace("Identificacion");
-    return;
-  }
-
-        if (tipoTec.includes("DETAILING")) {
-          navigation.replace("HomeDetailing");
-          return;
-        }
-
-        if (tipoTec.includes("AUTO SERVICIOS")) {
-          navigation.replace("AutoServicio");
-          return;
-        }
-
-        // Si no coincide nada, va al menú general
-        navigation.replace("HomeScreen");
-        return;
-      }
-
-      // Si nada calza → Home general
-      navigation.replace("Home");
+      navigation.replace(resolveRootRouteForUser(data.usuario));
 
     } catch (error) {
       console.error("Error de login:", error);

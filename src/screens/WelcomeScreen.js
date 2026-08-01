@@ -1,7 +1,17 @@
-import React from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { InteractionManager, View, Text, Image, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 
 export default function WelcomeScreen({ navigation }) {
+  const [showServices, setShowServices] = useState(false);
+
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => {
+      setShowServices(true);
+    });
+
+    return () => task.cancel?.();
+  }, []);
+
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#f7f9fc" }}>
       
@@ -25,47 +35,48 @@ export default function WelcomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* SERVICIOS */}
-      <View style={styles.servicesSection}>
-        <Text style={styles.sectionTitle}>Nuestros Servicios</Text>
-        <Text style={styles.sectionSubtitle}>
-          Soluciones completas en criminalística, identificación vehicular, autoservicios y detailing.
-        </Text>
+      {showServices && (
+        <View style={styles.servicesSection}>
+          <Text style={styles.sectionTitle}>Nuestros Servicios</Text>
+          <Text style={styles.sectionSubtitle}>
+            Soluciones completas en criminalística, identificación vehicular, autoservicios y detailing.
+          </Text>
 
-        <View style={styles.grid}>
-          <View style={styles.serviceBox}>
-            <Image
-              source={require("../../assets/criminalistica.png")}
-              style={styles.serviceImg}
-            />
-            <Text style={styles.serviceTitle}>Criminalística y Ciencias Forenses</Text>
-          </View>
+          <View style={styles.grid}>
+            <View style={styles.serviceBox}>
+              <Image
+                source={require("../../assets/criminalistica.png")}
+                style={styles.serviceImg}
+              />
+              <Text style={styles.serviceTitle}>Criminalística y Ciencias Forenses</Text>
+            </View>
 
-          <View style={styles.serviceBox}>
-            <Image
-              source={require("../../assets/identificacion.png")}
-              style={styles.serviceImg}
-            />
-            <Text style={styles.serviceTitle}>Identificación Vehicular</Text>
-          </View>
+            <View style={styles.serviceBox}>
+              <Image
+                source={require("../../assets/identificacion.png")}
+                style={styles.serviceImg}
+              />
+              <Text style={styles.serviceTitle}>Identificación Vehicular</Text>
+            </View>
 
-          <View style={styles.serviceBox}>
-            <Image
-              source={require("../../assets/autoservicios.png")}
-              style={styles.serviceImg}
-            />
-            <Text style={styles.serviceTitle}>Auto Servicios</Text>
-          </View>
+            <View style={styles.serviceBox}>
+              <Image
+                source={require("../../assets/autoservicios.png")}
+                style={styles.serviceImg}
+              />
+              <Text style={styles.serviceTitle}>Auto Servicios</Text>
+            </View>
 
-          <View style={styles.serviceBox}>
-            <Image
-              source={require("../../assets/detailing.png")}
-              style={styles.serviceImg}
-            />
-            <Text style={styles.serviceTitle}>Detailing</Text>
+            <View style={styles.serviceBox}>
+              <Image
+                source={require("../../assets/detailing.png")}
+                style={styles.serviceImg}
+              />
+              <Text style={styles.serviceTitle}>Detailing</Text>
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
       {/* FOOTER */}
       <View style={styles.footer}>
